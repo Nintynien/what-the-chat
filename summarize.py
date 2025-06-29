@@ -27,7 +27,7 @@ load_dotenv(override=True)
 parser = argparse.ArgumentParser(
     description="Fetch and summarize chat history from Discord or Slack channels"
 )
-parser.add_argument("--since-days", type=int, required=True, help="Number of days to look back from today")
+parser.add_argument("--since", type=int, required=True, help="Number of minutes to look back from now")
 parser.add_argument("--platform", choices=["discord", "slack"], default="discord", help="Platform to fetch messages from (default: discord)")
 parser.add_argument("--channel", required=True, help="Channel ID (Discord) or Channel name (Slack)")
 parser.add_argument(
@@ -60,8 +60,8 @@ parser.add_argument(
 args = parser.parse_args()
 
 # Calculate the since_date based on the number of days to look back
-since_date = datetime.now() - timedelta(days=args.since_days)
-print(f"{Fore.CYAN}→ Looking back {Fore.YELLOW}{args.since_days}{Fore.CYAN} days from today ({Fore.GREEN}{since_date.date()}{Fore.CYAN}){Style.RESET_ALL}")
+since_date = datetime.now() - timedelta(minutes=args.since)
+print(f"{Fore.CYAN}→ Looking back {Fore.YELLOW}{args.since}{Fore.CYAN} minutes from now ({Fore.GREEN}{since_date.date()}{Fore.CYAN}){Style.RESET_ALL}")
 
 # Get channel ID/name
 channel_identifier = args.channel
@@ -216,7 +216,7 @@ async def fetch_discord_messages(
     if first_message_date is None:
         first_message_date = since_date
     else:
-        print(f"    {Fore.GREEN}First message date: {first_message_date.date()}{Style.RESET_ALL}")
+        print(f"    {Fore.GREEN}First message date: {first_message_date}{Style.RESET_ALL}")
 
     # Join all messages with newlines to create a single string
     formatted_history = "\n".join(chat_history)
@@ -452,21 +452,16 @@ def generate_summary(chat_history: str) -> str:
     try:
         # Create the system prompt
         system_prompt = """
-You are an expert summarizer for PyMC Labs, specializing in internal Discord chats where viewers comment on what happens across multiple GTA Roleplayer streams.
-Your task is to read a sequence of messages and generate a clear, structured summary that captures what happened across the streams.
+You are an expert summarizer for PyMC Labs, specializing in internal Discord chats where viewers comment on what happens across GTA Roleplay.
+Your task is to read a sequence of messages and generate a clear summary of events that captures what happened.
 
-
-Instructions for a Project Event Update (0–2 days):
-	•	Focus on what was done, what remains to be done, and immediate actionables.
-	•	Capture individual contributions: who did or said what.
-	•	Flag anything time-sensitive or urgent.
-
-⸻
-
-General Writing Instructions (all cases):
-	•	Maintain a professional, internal tone appropriate for project management updates.
+General Writing Instructions:
+	•	Maintain a professional tone appropriate for all audiences.
 	•	Be specific but brief; avoid unnecessary commentary.
-	•	Use clear headings and bullet points for readability.
+    •	Keep the summary succinct and factual, ignoring opinions of viewers
+    •	Speak from a character point of view and not a player point of view (keep the roleplay in character)
+    •	Maintain a professional tone appropriate for all audiences.
+    •	Title the summary as 'Tsunami Synopsis'
     •	Use markdown formatting for bullet points and headings.
     •	Refer to users, not by their names but by their IDs (like <@123456789012345678>).
 """
